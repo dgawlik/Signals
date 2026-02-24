@@ -4,13 +4,13 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>org.trading</groupId>
-    <artifactId>Signals</artifactId>
-    <version>1.0.0-SNAPSHOT</version>
+    <groupId>org.dgawlik</groupId>
+    <artifactId>signals</artifactId>
+    <version>1.0.4</version>
 
     <properties>
-        <maven.compiler.source>25</maven.compiler.source>
-        <maven.compiler.target>25</maven.compiler.target>
+        <maven.compiler.source>21</maven.compiler.source>
+        <maven.compiler.target>21</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 
@@ -18,7 +18,7 @@
         <repository>
             <id>github</id>
             <name>GitHub Packages</name>
-            <url>https://maven.pkg.github.com/dgawlik/Signals</url>
+            <url>https://maven.pkg.github.com/dgawlik/signals</url>
         </repository>
     </distributionManagement>
 
@@ -94,6 +94,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.14.1</version>
                 <configuration>
                     <annotationProcessorPaths>
                         <path>
@@ -102,6 +103,7 @@
                             <version>1.18.42</version>
                         </path>
                     </annotationProcessorPaths>
+                    <release>21</release>
                 </configuration>
             </plugin>
         </plugins>
