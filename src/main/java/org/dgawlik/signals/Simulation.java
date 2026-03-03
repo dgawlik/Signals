@@ -17,6 +17,30 @@ public class Simulation {
     public record Context(Portfolio portfolio, Map<String, Object> data, List<Quote> lookbehind,
             Map<String, Counter> counters) {
 
+        public <T> T get(String key) {
+            return (T) data.get(key);
+        }
+
+        public void put(String key, Object value) {
+            data.put(key, value);
+        }
+
+        public void remove(String key) {
+            data.remove(key);
+        }
+
+        public Counter getCounter(String key) {
+            return counters.get(key);
+        }
+
+        public void putCounter(String key, Counter counter) {
+            counters.put(key, counter);
+        }
+
+        public void removeCounter(String key) {
+            counters.remove(key);
+        }
+
     }
 
     private Portfolio portfolio;

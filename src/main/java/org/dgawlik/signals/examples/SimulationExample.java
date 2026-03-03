@@ -35,31 +35,31 @@ public class SimulationExample {
                         try {
                             if (prevEma7Aapl < prevEma24Aapl && ema7Aapl > ema24Aapl) {
                                 context.portfolio().ops(quote).buy("AAPL", 450_000).commit();
-                                context.data().put("aaplOn", true);
+                                context.put("aaplOn", true);
                             }
 
                             if (prevEma7Tsla < prevEma24Tsla && ema7Tsla > ema24Tsla) {
                                 context.portfolio().ops(quote).buy("TSLA", 450_000).commit();
-                                context.data().put("tslaOn", true);
+                                context.put("tslaOn", true);
                             }
 
-                            if (context.data().get("aaplOn") != null) {
-                                context.counters().get("AAPL").add(0.0);
+                            if (context.get("aaplOn") != null) {
+                                context.getCounter("AAPL").add(0.0);
 
-                                if (context.counters().get("AAPL").getValue() == 10) {
+                                if (context.getCounter("AAPL").getValue() == 10) {
                                     context.portfolio().ops(quote).close("AAPL").commit();
-                                    context.data().remove("aaplOn");
-                                    context.counters().get("AAPL").reset();
+                                    context.remove("aaplOn");
+                                    context.getCounter("AAPL").reset();
                                 }
                             }
 
-                            if (context.data().get("tslaOn") != null) {
-                                context.counters().get("TSLA").add(0.0);
+                            if (context.get("tslaOn") != null) {
+                                context.getCounter("TSLA").add(0.0);
 
-                                if (context.counters().get("TSLA").getValue() == 10) {
+                                if (context.getCounter("TSLA").getValue() == 10) {
                                     context.portfolio().ops(quote).close("TSLA").commit();
-                                    context.data().remove("tslaOn");
-                                    context.counters().get("TSLA").reset();
+                                    context.remove("tslaOn");
+                                    context.getCounter("TSLA").reset();
                                 }
                             }
 
