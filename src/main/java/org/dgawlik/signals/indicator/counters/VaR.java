@@ -2,7 +2,7 @@ package org.dgawlik.signals.indicator.counters;
 
 import java.util.LinkedList;
 
-public class VaR implements Counter {
+public class VaR {
 
     private double portfolioValue;
     private double confidenceLevel = 1.65; // for 95% confidence level
@@ -15,7 +15,7 @@ public class VaR implements Counter {
         this.returns = new LinkedList<>();
     }
 
-    public void add(double r) {
+    public void addReturn(double r) {
         returns.add(r);
 
         if (returns.size() > timeHorizon) {
@@ -23,7 +23,7 @@ public class VaR implements Counter {
         }
     }
 
-    public double getValue() {
+    public double getVaR() {
         if (returns.size() < timeHorizon) {
             return Double.NaN;
         } else {

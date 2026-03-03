@@ -1,47 +1,16 @@
 package org.dgawlik.signals;
 
 import java.time.LocalDateTime;
-import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
-import java.util.function.Consumer;
+import java.util.function.BiConsumer;
+import java.util.function.Supplier;
 
 import org.dgawlik.signals.etoro.CandlesEndpoint;
 import org.dgawlik.signals.indicator.Series;
-import org.dgawlik.signals.indicator.counters.Counter;
 import org.dgawlik.signals.portfolio.Portfolio;
 
 public class Simulation {
-
-    public record Context(Portfolio portfolio, Map<String, Object> data, List<Quote> lookbehind,
-            Map<String, Counter> counters) {
-
-        public <T> T get(String key) {
-            return (T) data.get(key);
-        }
-
-        public void put(String key, Object value) {
-            data.put(key, value);
-        }
-
-        public void remove(String key) {
-            data.remove(key);
-        }
-
-        public Counter getCounter(String key) {
-            return counters.get(key);
-        }
-
-        public void putCounter(String key, Counter counter) {
-            counters.put(key, counter);
-        }
-
-        public void removeCounter(String key) {
-            counters.remove(key);
-        }
-
-    }
 
     private Portfolio portfolio;
     private int lookbehind = 10;
@@ -50,8 +19,6 @@ public class Simulation {
 
     private final List<SymbolEvents> events;
     private final Frequency frequency;
-
-    private Context initialContext;
 
     private Simulation(Frequency frequency, String... intruments) {
         var candlesEndpoint = CandlesEndpoint.ETORO();
@@ -97,13 +64,7 @@ public class Simulation {
         return this;
     }
 
-    public Simulation onStart(Consumer<Context> strategy) {
-        this.initialContext = new Context(portfolio, new HashMap<>(), new LinkedList<>(), new HashMap<>());
-        strategy.accept(initialContext);
-        return this;
-    }
-
-    public Simulation run(Consumer<Context> strategy) {
+    public Simulation run(Supplier<BiConsumer<Portfolio, List<Quote>>> strategy) {
         if (portfolio == null) {
             throw new IllegalStateException("Portfolio is not set");
         }
@@ -112,17 +73,9 @@ public class Simulation {
         var quotes = aggregator.convertToQuotes().stream()
                 .filter(q -> !q.time(frequency).isBefore(from) && !q.time(frequency).isAfter(to)).toList();
 
-        Map<String, Object> data;
-        Map<String, Counter> counters;
-        if (initialContext != null) {
-            data = initialContext.data();
-            counters = initialContext.counters();
-        } else {
-            data = new HashMap<String, Object>();
-            counters = new HashMap<String, Counter>();
-        }
-
         var lookbehindQueue = new LinkedList<Quote>();
+
+        var strategyRunner = strategy.get();
 
         for (var quote : quotes) {
             if (lookbehindQueue.size() > lookbehind) {
@@ -130,7 +83,7 @@ public class Simulation {
             }
             lookbehindQueue.addLast(quote);
 
-            strategy.accept(new Context(portfolio, data, List.copyOf(lookbehindQueue), counters));
+            strategyRunner.accept(portfolio, List.copyOf(lookbehindQueue));
         }
 
         return this;

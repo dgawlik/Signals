@@ -1,27 +1,18 @@
 package org.dgawlik.signals.indicator.counters;
 
-public class TickCounting implements Counter {
+public class TickCounting {
 
-    private int count;
+    private int count = 0;
 
-    public TickCounting() {
-        this.count = 0;
-    }
-
-    public void add(double value) {
+    public void tick() {
         count++;
     }
 
-    public double getValue() {
+    public double count() {
         return count;
     }
 
     public void reset() {
         count = 0;
     }
-
-    public boolean isReady() {
-        return true;
-    }
-
 }

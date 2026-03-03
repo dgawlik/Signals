@@ -12,7 +12,7 @@ public class KellyRatio {
         this.returns = new LinkedList<>();
     }
 
-    public void add(double r) {
+    public void addReturn(double r) {
         returns.add(r);
 
         if (returns.size() > timeHorizon) {
@@ -20,7 +20,7 @@ public class KellyRatio {
         }
     }
 
-    public double getValue() {
+    public double getKellyRatio() {
         if (returns.size() < timeHorizon) {
             return Double.NaN;
         } else {
