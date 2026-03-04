@@ -42,83 +42,82 @@ ETORO_API_KEY="<your etoro api key>"
 Here is what MACD following would look like for 7-period and 24-period EMAs.
 
 ```java
-   var finalPortfolio = Simulation.forInstruments(Frequency.ONE_DAY, "AAPL", "TSLA")
+var finalPortfolio = Simulation.forInstruments(Frequency.ONE_DAY, "AAPL", "TSLA")
         .withPortfolio(100_000, 2.5)
         .withIndicators(new EMA("AAPL", 7), new EMA("AAPL", 24), new EMA("TSLA", 7), new EMA("TSLA", 24))
         .run(() -> {
 
-            var isAaplOn = new Boolean[] { false };
-            var isTslaOn = new Boolean[] { false };
+            class MACDAndStopLossStrategy extends Strategy {
 
-            var slAapl = new TrailingStopLoss();
-            var slTsla = new TrailingStopLoss();
+                private final String symbol;
+                private final List<String> allSymbols;
+                private TrailingStopLoss sl;
 
-            return (portfolio, lookbehind) -> {
-                if (lookbehind.size() > 1) {
-                    var prevQuote = lookbehind.get(lookbehind.size() - 2);
-                    var quote = lookbehind.getLast();
+                public MACDAndStopLossStrategy(String symbol, List<String> allSymbols) {
+                    this.symbol = symbol;
+                    this.allSymbols = allSymbols;
+                }
 
-                    var prevEma7Aapl = prevQuote.getIndicator("EMA7.AAPL").val1();
-                    var ema7Aapl = quote.getIndicator("EMA7.AAPL").val1();
+                @Override
+                public void activateOn(List<Quote> lookbehind) {
 
-                    var prevEma24Aapl = prevQuote.getIndicator("EMA24.AAPL").val1();
-                    var ema24Aapl = quote.getIndicator("EMA24.AAPL").val1();
+                    if (lookbehind.size() > 1) {
+                        var prevQuote = lookbehind.get(lookbehind.size() - 2);
+                        var quote = lookbehind.getLast();
 
-                    var prevEma7Tsla = prevQuote.getIndicator("EMA7.TSLA").val1();
-                    var ema7Tsla = quote.getIndicator("EMA7.TSLA").val1();
+                        var prevEma7 = prevQuote.getIndicator("EMA7." + symbol).val1();
+                        var ema7 = quote.getIndicator("EMA7." + symbol).val1();
 
-                    var prevEma24Tsla = prevQuote.getIndicator("EMA24.TSLA").val1();
-                    var ema24Tsla = quote.getIndicator("EMA24.TSLA").val1();
+                        var prevEma24 = prevQuote.getIndicator("EMA24." + symbol).val1();
+                        var ema24 = quote.getIndicator("EMA24." + symbol).val1();
 
-                    try {
-                        if (prevEma7Aapl < prevEma24Aapl && ema7Aapl > ema24Aapl) {
-                            var numPositions = portfolio.currentValuation().positions().size();
-
-                            if (numPositions == 0) {
-                                portfolio.ops(quote).rebalance(Map.of("AAPL", 0.9)).commit();
-                            } else {
-                                portfolio.ops(quote)
-                                        .rebalance(Map.of("AAPL", 0.48, "TSLA", 0.48))
-                                        .commit();
-                            }
-                            isAaplOn[0] = true;
-                            slAapl.setUp(0.05, quote.getCandle("AAPL").close());
+                        if (prevEma7 < prevEma24 && ema7 > ema24) {
+                            active = true;
+                            sl = new TrailingStopLoss();
+                            sl.setUp(0.05, quote.getCandle(symbol).close());
                         }
-
-                        if (prevEma7Tsla < prevEma24Tsla && ema7Tsla > ema24Tsla) {
-                            var numPositions = portfolio.currentValuation().positions().size();
-
-                            if (numPositions == 0) {
-                                portfolio.ops(quote).rebalance(Map.of("TSLA", 0.9)).commit();
-                            } else {
-                                portfolio.ops(quote)
-                                        .rebalance(Map.of("AAPL", 0.48, "TSLA", 0.48))
-                                        .commit();
-                            }
-
-                            isTslaOn[0] = true;
-                            slTsla.setUp(0.05, quote.getCandle("TSLA").close());
-                        }
-
-                        if (isAaplOn[0]) {
-                            if (slAapl.isHit(quote.getCandle("AAPL").close())) {
-                                portfolio.ops(quote).close("AAPL").commit();
-                                isAaplOn[0] = false;
-                            }
-                        }
-
-                        if (isTslaOn[0]) {
-                            if (slTsla.isHit(quote.getCandle("TSLA").close())) {
-                                portfolio.ops(quote).close("TSLA").commit();
-                                isTslaOn[0] = false;
-                            }
-                        }
-
-                    } catch (Exception e) {
-                        System.err.println(e.getMessage());
                     }
                 }
 
+                @Override
+                public void deactivateOn(Portfolio portfolio, List<Quote> lookbehind) {
+                    var quote = lookbehind.getLast();
+
+                    if (sl.isHit(quote.getCandle(symbol).close())) {
+                        portfolio.ops(quote).close(symbol).commit();
+                        active = false;
+                    }
+                }
+
+                @Override
+                public void act(Portfolio portfolio, List<Quote> lookbehind) {
+                    var numPositions = portfolio.currentValuation().positions().size();
+                    var quote = lookbehind.getLast();
+
+                    var count = allSymbols.size();
+                    var weight = (1.0 / count) * 0.9;
+
+                    var rebalanceMap = new HashMap<String, Double>();
+                    for (String s : allSymbols) {
+                        rebalanceMap.put(s, weight);
+                    }
+
+                    if (numPositions == 0) {
+                        portfolio.ops(quote).rebalance(Map.of(symbol, 0.9)).commit();
+                    } else {
+                        portfolio.ops(quote)
+                                .rebalance(rebalanceMap)
+                                .commit();
+                    }
+                }
+            }
+
+            var strategyAapl = new MACDAndStopLossStrategy("AAPL", List.of("AAPL", "TSLA"));
+            var strategyTsla = new MACDAndStopLossStrategy("TSLA", List.of("AAPL", "TSLA"));
+
+            return (portfolio, lookbehind) -> {
+                strategyAapl.step(portfolio, lookbehind);
+                strategyTsla.step(portfolio, lookbehind);
             };
         }).getResult();
 
