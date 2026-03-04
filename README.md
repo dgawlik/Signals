@@ -42,9 +42,17 @@ ETORO_API_KEY="<your etoro api key>"
 Here is what MACD following would look like for 7-period and 24-period EMAs.
 
 ```java
-var finalPortfolio = Simulation.forInstruments(Frequency.ONE_DAY, "AAPL", "TSLA")
+var finalPortfolio = Simulation.forInstruments(Frequency.ONE_DAY, "AAPL", "TSLA", "GOOG", "MSFT")
         .withPortfolio(100_000, 2.5)
-        .withIndicators(new EMA("AAPL", 7), new EMA("AAPL", 24), new EMA("TSLA", 7), new EMA("TSLA", 24))
+        .withIndicators(
+                new EMA("AAPL", 7),
+                new EMA("AAPL", 24),
+                new EMA("TSLA", 7),
+                new EMA("TSLA", 24),
+                new EMA("GOOG", 7),
+                new EMA("GOOG", 24),
+                new EMA("MSFT", 7),
+                new EMA("MSFT", 24))
         .run(() -> {
 
             class MACDAndStopLossStrategy extends Strategy {
@@ -94,30 +102,26 @@ var finalPortfolio = Simulation.forInstruments(Frequency.ONE_DAY, "AAPL", "TSLA"
                     var numPositions = portfolio.currentValuation().positions().size();
                     var quote = lookbehind.getLast();
 
-                    var count = allSymbols.size();
-                    var weight = (1.0 / count) * 0.9;
-
-                    var rebalanceMap = new HashMap<String, Double>();
-                    for (String s : allSymbols) {
-                        rebalanceMap.put(s, weight);
-                    }
-
                     if (numPositions == 0) {
                         portfolio.ops(quote).rebalance(Map.of(symbol, 0.9)).commit();
                     } else {
                         portfolio.ops(quote)
-                                .rebalance(rebalanceMap)
+                                .rebalanceEqualWeights(0.95, allSymbols)
                                 .commit();
                     }
                 }
             }
 
-            var strategyAapl = new MACDAndStopLossStrategy("AAPL", List.of("AAPL", "TSLA"));
-            var strategyTsla = new MACDAndStopLossStrategy("TSLA", List.of("AAPL", "TSLA"));
+            var strategyAapl = new MACDAndStopLossStrategy("AAPL", List.of("AAPL", "TSLA", "GOOG", "MSFT"));
+            var strategyTsla = new MACDAndStopLossStrategy("TSLA", List.of("AAPL", "TSLA", "GOOG", "MSFT"));
+            var strategyGoog = new MACDAndStopLossStrategy("GOOG", List.of("AAPL", "TSLA", "GOOG", "MSFT"));
+            var strategyMsft = new MACDAndStopLossStrategy("MSFT", List.of("AAPL", "TSLA", "GOOG", "MSFT"));
 
             return (portfolio, lookbehind) -> {
                 strategyAapl.step(portfolio, lookbehind);
                 strategyTsla.step(portfolio, lookbehind);
+                strategyGoog.step(portfolio, lookbehind);
+                strategyMsft.step(portfolio, lookbehind);
             };
         }).getResult();
 
